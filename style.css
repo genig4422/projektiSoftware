@@ -1,0 +1,123 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
+
+
+*{
+    font-family: 'Poppins', serif;
+}
+
+body{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: linear-gradient(to right, #ffffff, #b6c6fa);
+    color: #333;
+}
+
+.container{
+    margin: 0 15px;   
+}
+
+.form-box{
+    width: 100%;
+    max-width: 450px;
+    padding: 30px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+h2{
+    font-size: 34px;
+    text-align: center;
+    margin-bottom: 20px
+}
+
+input,select{
+    width: 95%;
+    padding: 12px;
+    background: #eee;
+    border-radius: 6px;
+    border: none;
+    outline: none;
+    font-size: 16px;
+    color: #333;
+    margin-bottom: 20px;
+}
+
+button{
+    width: 100%;
+    padding: 12px;
+    background: #7494ec;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    color: white;
+    font-weight: 500;
+    margin-bottom: 10px;
+    transition: 0.5s;
+
+}
+
+button:hover{
+    background: #6884d3;
+    
+}
+
+.error-message{
+    padding: 12px;
+    background: #f8d7da;
+    border-radius: 6px;
+    font-size: 16px;
+    color: #a42834;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+p{
+    font-size: 14.5px;
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+p a{
+    color: #7494ec;
+    text-decoration: none;
+
+}
+
+p a:hover{
+    text-decoration: underline;
+}
+
+/*** Navigation ***/
+    .navbar { z-index: 1030; }
+       
+   
+        .sidebar .nav-link i { min-width: 30px; text-align: center; }
+        .sidebar .nav-link span { display: inline; margin-left: 10px; }
+        .sidebar.collapsed .nav-link span { display: none; }
+        .sidebar .toggle-btn {
+            background: none;
+            border: none;
+            color: #fff;
+            padding: 10px;
+            width: 100%;
+            text-align: left;
+            cursor: pointer;
+        }
+
+      
+      .first-content {
+    display: flex;
+    gap: 20px; /* adds space between the two cards */
+    flex-wrap: wrap; /* allows wrapping on smaller screens */
+}
+
+.first-content .card {
+    flex: 1; /* makes both cards take equal width */
+    min-width: 300px; /* prevents them from shrinking too much on small screens */
+}
+
+      
