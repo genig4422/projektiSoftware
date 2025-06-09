@@ -1,12 +1,12 @@
 <?php
 session_start();
 
-if (!isset($_SESSION['email']) || $_SESSION['role'] !== 'owner') {
+if (!isset($_SESSION['email']) || $_SESSION['role'] !== 'manager') {
     header("Location: login.php");
     exit();
 }
 
-require_once 'header.php';
+require_once 'header1.php';
 
 // Initialize variables
 $errors = [];
@@ -28,6 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_car'])) {
         }
         $business_id = $user['business_id'];
 
+        // Proceed with car addition
         $brand = trim($_POST['brand'] ?? '');
         $model = trim($_POST['model'] ?? '');
         $license_plate = trim($_POST['license_plate'] ?? '');
@@ -90,12 +91,8 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Car Management</title>
-   
-  
 </head>
 <body>
- 
-
     <div class="main-content" id="mainContent">
         <div class="container my-5">
             <h2 class="text-center mb-4">Car Management</h2>
@@ -153,7 +150,7 @@ try {
                             <h5 class="modal-title" id="addCarModalLabel">Add New Car</h5>
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
-                        <form method="POST" action="cars.php">
+                        <form method="POST" action="cars1.php">
                             <div class="modal-body">
                                 <input type="hidden" name="add_car" value="1">
                                 <div class="mb-3">
@@ -176,7 +173,7 @@ try {
                         </form>
                     </div>
                 </div>
-            </div>
+                </div>
         </div>
     </div>
 

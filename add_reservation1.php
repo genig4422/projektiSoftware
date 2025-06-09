@@ -1,29 +1,52 @@
 <?php
 session_start();
 
-if (!isset($_SESSION['email']) || $_SESSION['role'] !== 'owner') {
+// Enable error logging
+ini_set('log_errors', 1);
+ini_set('error_log', 'C:/xampp/htdocs/debug.log'); // Adjust for your XAMPP setup
+
+// Debug: Log session data
+error_log("Session data: " . print_r($_SESSION, true));
+
+// Check session for manager role
+if (!isset($_SESSION['email']) || $_SESSION['role'] !== 'manager') {
+    error_log("Session check failed: email=" . ($_SESSION['email'] ?? 'unset') . ", role=" . ($_SESSION['role'] ?? 'unset'));
     header("Location: login.php");
     exit();
 }
 
-require_once 'header.php';
+// Include database configuration
+require_once 'config.php';
+if (!$conn) {
+    error_log("Database connection failed: " . mysqli_connect_error());
+    die("Database connection failed. Check error log for details.");
+}
+
+// Include header
+require_once 'header1.php';
 
 // Initialize variables
 $errors = [];
 $success = '';
-$year = isset($_GET['year']) ? (int)$_GET['year'] : date('Y');
-$month = isset($_GET['month']) ? (int)$_GET['month'] : date('m');
-$daysInMonth = (new DateTime("$year-$month-01"))->format('t');
-
-// Enable error logging
-ini_set('log_errors', 1);
-ini_set('error_log', 'C:/xampp/htdocs/debug.log'); // Adjust path for your XAMPP setup
+$year = isset($_GET['year']) && is_numeric($_GET['year']) ? (int)$_GET['year'] : date('Y');
+$month = isset($_GET['month']) && is_numeric($_GET['month']) ? (int)$_GET['month'] : date('m');
+try {
+    $daysInMonth = (new DateTime("$year-$month-01"))->format('t');
+} catch (Exception $e) {
+    error_log("Invalid date: " . $e->getMessage());
+    $year = date('Y');
+    $month = date('m');
+    $daysInMonth = date('t');
+}
 
 // Handle form submissions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         // Get business_id
         $stmt = $conn->prepare("SELECT business_id FROM users WHERE email = ?");
+        if (!$stmt) {
+            throw new Exception("Prepare failed: " . $conn->error);
+        }
         $stmt->bind_param("s", $_SESSION['email']);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -235,7 +258,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
     } catch (Exception $e) {
-        $errors[] = 'Database error: ' . $e->getMessage();
+        $errors[] = 'Database error: ' . htmlspecialchars($e->getMessage());
         error_log("Exception: " . $e->getMessage());
     }
 }
@@ -276,8 +299,11 @@ try {
     $stmt->bind_param("i", $business_id);
     $stmt->execute();
     $reservations = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+
+    $stmt->close();
+    $conn->close();
 } catch (Exception $e) {
-    $errors[] = 'Database error: ' . $e->getMessage();
+    $errors[] = 'Database error: ' . htmlspecialchars($e->getMessage());
     error_log("Fetch error: " . $e->getMessage());
 }
 ?>
@@ -288,11 +314,61 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reservation Management</title>
-    
-  
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+    <style>
+        .navbar { z-index: 1030; }
+        .sidebar {
+            position: fixed;
+            top: 56px;
+            left: 0;
+            height: calc(100vh - 56px);
+            background-color: #343a40;
+            color: #fff;
+            transition: width 0.3s;
+            overflow-x: hidden;
+            z-index: 1020;
+        }
+        .sidebar.collapsed { width: 50px; }
+        .sidebar:not(.collapsed) { width: 200px; }
+        .sidebar .nav-link {
+            color: #fff;
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            white-space: nowrap;
+        }
+        .sidebar .nav-link i { min-width: 30px; text-align: center; }
+        .sidebar .nav-link span { display: inline; margin-left: 10px; }
+        .sidebar.collapsed .nav-link span { display: none; }
+        .sidebar .toggle-btn {
+            background: none;
+            border: none;
+            color: #fff;
+            padding: 10px;
+            width: 100%;
+            text-align: left;
+            cursor: pointer;
+        }
+        .main-content {
+            transition: margin-left 0.3s;
+            padding-top: 70px;
+        }
+        .main-content.collapsed { margin-left: 50px; }
+        .main-content:not(.collapsed) { margin-left: 200px; }
+        .table-container { overflow-x: auto; }
+        .success-message {
+            position: fixed;
+            top: 70px;
+            right: 20px;
+            z-index: 1050;
+            max-width: 300px;
+        }
+        .select2-container { width: 100% !important; }
+    </style>
 </head>
 <body>
-
     <div class="main-content" id="mainContent">
         <div class="container my-5">
             <h2 class="text-center mb-4">Reservation Management</h2>
@@ -325,7 +401,7 @@ try {
                                 <h5 class="modal-title" id="addReservationModalLabel">Add New Reservation</h5>
                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
-                            <form method="POST" action="add_reservation.php?year=<?= $year ?>&month=<?= $month ?>">
+                            <form method="POST" action="add_reservation.php?year=<?= htmlspecialchars($year) ?>&month=<?= htmlspecialchars($month) ?>">
                                 <div class="modal-body">
                                     <input type="hidden" name="add_reservation" value="1">
                                     <div class="mb-3">
@@ -333,7 +409,7 @@ try {
                                         <select class="form-select" id="car_id" name="car_id" required>
                                             <option value="">Select a car</option>
                                             <?php foreach ($cars as $car): ?>
-                                                <option value="<?= $car['car_id'] ?>"><?= htmlspecialchars($car['brand'] . ' ' . $car['model'] . ' (' . $car['license_plate'] . ')') ?></option>
+                                                <option value="<?= htmlspecialchars($car['car_id']) ?>"><?= htmlspecialchars($car['brand'] . ' ' . $car['model'] . ' (' . $car['license_plate'] . ')') ?></option>
                                             <?php endforeach; ?>
                                         </select>
                                     </div>
@@ -353,7 +429,7 @@ try {
                                         <select class="form-select" id="customer_id" name="customer_id">
                                             <option value=""><?php echo empty($customers) ? 'No customers found' : 'Select or type a customer name'; ?></option>
                                             <?php foreach ($customers as $customer): ?>
-                                                <option value="<?= $customer['customer_id'] ?>" 
+                                                <option value="<?= htmlspecialchars($customer['customer_id']) ?>" 
                                                         data-name="<?= htmlspecialchars($customer['name']) ?>" 
                                                         data-phone="<?= htmlspecialchars($customer['phone'] ?? '') ?>" 
                                                         data-license="<?= htmlspecialchars($customer['license_number'] ?? '') ?>">
@@ -440,17 +516,17 @@ try {
                                     <td><?= number_format($reservation['total_cost'], 2) ?></td>
                                     <td><?= htmlspecialchars($reservation['comments'] ?? 'None') ?></td>
                                     <td>
-                                        <a href="edit_reservation.php?reservation_id=<?= $reservation['reservation_id'] ?>&year=<?= $year ?>&month=<?= $month ?>" class="btn btn-sm btn-primary">
+                                        <a href="edit_reservation.php?reservation_id=<?= htmlspecialchars($reservation['reservation_id']) ?>&year=<?= htmlspecialchars($year) ?>&month=<?= htmlspecialchars($month) ?>" class="btn btn-sm btn-primary">
                                             <i class="fas fa-edit"></i> Edit
                                         </a>
-                                        <form method="POST" action="add_reservation.php?year=<?= $year ?>&month=<?= $month ?>" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this reservation?');">
+                                        <form method="POST" action="add_reservation.php?year=<?= htmlspecialchars($year) ?>&month=<?= htmlspecialchars($month) ?>" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this reservation?');">
                                             <input type="hidden" name="delete_reservation" value="1">
-                                            <input type="hidden" name="reservation_id" value="<?= $reservation['reservation_id'] ?>">
+                                            <input type="hidden" name="reservation_id" value="<?= htmlspecialchars($reservation['reservation_id']) ?>">
                                             <button type="submit" class="btn btn-sm btn-danger">
                                                 <i class="fas fa-trash"></i> Delete
                                             </button>
                                         </form>
-                                        <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#paymentModal<?= $reservation['reservation_id'] ?>">
+                                        <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#paymentModal<?= htmlspecialchars($reservation['reservation_id']) ?>">
                                             <i class="fas fa-money-bill"></i> Pay
                                         </button>
                                     </td>
@@ -466,20 +542,20 @@ try {
     <!-- Payment Modals -->
     <?php if (!empty($reservations)): ?>
         <?php foreach ($reservations as $reservation): ?>
-            <div class="modal fade" id="paymentModal<?= $reservation['reservation_id'] ?>" tabindex="-1" aria-labelledby="paymentModalLabel<?= $reservation['reservation_id'] ?>" aria-hidden="true">
+            <div class="modal fade" id="paymentModal<?= htmlspecialchars($reservation['reservation_id']) ?>" tabindex="-1" aria-labelledby="paymentModalLabel<?= htmlspecialchars($reservation['reservation_id']) ?>" aria-hidden="true">
                 <div class="modal-dialog">
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h5 class="modal-title" id="paymentModalLabel<?= $reservation['reservation_id'] ?>">Record Payment for Reservation #<?= $reservation['reservation_id'] ?></h5>
+                            <h5 class="modal-title" id="paymentModalLabel<?= htmlspecialchars($reservation['reservation_id']) ?>">Record Payment for Reservation #<?= htmlspecialchars($reservation['reservation_id']) ?></h5>
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
-                        <form method="POST" action="add_reservation.php?year=<?= $year ?>&month=<?= $month ?>">
+                        <form method="POST" action="add_reservation.php?year=<?= htmlspecialchars($year) ?>&month=<?= htmlspecialchars($month) ?>">
                             <div class="modal-body">
                                 <input type="hidden" name="pay_reservation" value="1">
                                 <input type="hidden" name="reservation_id" value="<?= htmlspecialchars($reservation['reservation_id']) ?>">
                                 <div class="mb-3">
-                                    <label for="amount_<?= $reservation['reservation_id'] ?>" class="form-label">Amount (€)</label>
-                                    <input type="number" step="0.01" class="form-control" id="amount_<?= $reservation['reservation_id'] ?>" name="amount" value="<?= htmlspecialchars($reservation['total_cost']) ?>" required>
+                                    <label for="amount_<?= htmlspecialchars($reservation['reservation_id']) ?>" class="form-label">Amount (€)</label>
+                                    <input type="number" step="0.01" class="form-control" id="amount_<?= htmlspecialchars($reservation['reservation_id']) ?>" name="amount" value="<?= htmlspecialchars($reservation['total_cost']) ?>" required>
                                 </div>
                             </div>
                             <div class="modal-footer">
@@ -497,20 +573,37 @@ try {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
+        console.log('add_reservation.php script loaded');
+
         // Sidebar toggle
-        document.getElementById('toggleSidebar').addEventListener('click', () => {
-            const sidebar = document.getElementById('sidebar');
-            const mainContent = document.getElementById('mainContent');
-            sidebar.classList.toggle('collapsed');
-            mainContent.classList.toggle('collapsed');
-        });
+        const toggleSidebar = document.getElementById('toggleSidebar');
+        if (toggleSidebar) {
+            toggleSidebar.addEventListener('click', () => {
+                const sidebar = document.getElementById('sidebar');
+                const mainContent = document.getElementById('mainContent');
+                if (sidebar && mainContent) {
+                    sidebar.classList.toggle('collapsed');
+                    mainContent.classList.toggle('collapsed');
+                    console.log('Sidebar toggled');
+                } else {
+                    console.error('Sidebar or mainContent not found');
+                }
+            });
+        } else {
+            console.warn('toggleSidebar not found');
+        }
 
         // Initialize Select2
-        $('#customer_id').select2({
-            placeholder: '<?php echo empty($customers) ? "No customers found" : "Select or type a customer name"; ?>',
-            allowClear: true,
-            dropdownParent: $('#addReservationModal')
-        });
+        try {
+            $('#customer_id').select2({
+                placeholder: '<?php echo empty($customers) ? "No customers found" : "Select or type a customer name"; ?>',
+                allowClear: true,
+                dropdownParent: $('#addReservationModal')
+            });
+            console.log('Select2 initialized');
+        } catch (e) {
+            console.error('Select2 initialization failed:', e);
+        }
 
         // Handle customer type radio buttons
         function toggleCustomerFields() {
@@ -521,20 +614,42 @@ try {
             $('#customer_name').prop('disabled', isExisting);
             $('#phone').prop('disabled', isExisting);
             $('#license_number').prop('disabled', isExisting);
+            console.log('Customer fields toggled:', isExisting ? 'existing' : 'new');
         }
 
-        toggleCustomerFields();
-        $('input[name="customer_type"]').on('change', toggleCustomerFields);
+        try {
+            toggleCustomerFields();
+            $('input[name="customer_type"]').on('change', toggleCustomerFields);
+        } catch (e) {
+            console.error('Customer type toggle failed:', e);
+        }
 
         // Handle customer selection
-        $('#customer_id').on('change', function() {
-            const selected = $(this).find('option:selected');
-            const name = selected.data('name') || '';
-            const phone = selected.data('phone') || '';
-            const license = selected.data('license') || '';
-            $('#customer_name').val(name);
-            $('#phone').val(phone);
-            $('#license_number').val(license);
+        try {
+            $('#customer_id').on('change', function() {
+                const selected = $(this).find('option:selected');
+                const name = selected.data('name') || '';
+                const phone = selected.data('phone') || '';
+                const license = selected.data('license') || '';
+                $('#customer_name').val(name);
+                $('#phone').val(phone);
+                $('#license_number').val(license);
+                console.log('Customer selected:', name);
+            });
+        } catch (e) {
+            console.error('Customer selection handler failed:', e);
+        }
+
+        // Debug modal triggers
+        document.querySelectorAll('[data-bs-toggle="modal"]').forEach(button => {
+            button.addEventListener('click', () => {
+                const target = button.getAttribute('data-bs-target');
+                console.log('Modal trigger clicked, target:', target);
+                const modal = document.querySelector(target);
+                if (!modal) {
+                    console.error('Modal not found:', target);
+                }
+            });
         });
     </script>
 </body>

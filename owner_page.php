@@ -6,7 +6,7 @@ if (!isset($_SESSION['email']) || $_SESSION['role'] !== 'owner') {
     header("Location: login.php");
     exit();
 }
-require_once 'config.php';
+require_once 'header.php';
 $email = $_SESSION['email'];
 
 // Fetch user info
@@ -47,137 +47,10 @@ $users = $users_stmt->get_result();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Owner Dashboard</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
-    <style>
-        .navbar { z-index: 1030; }
-        .sidebar {
-            position: fixed;
-            top: 56px;
-            left: 0;
-            height: calc(100vh - 56px);
-            background-color: #343a40;
-            color: #fff;
-            transition: width 0.3s;
-            overflow-x: hidden;
-            z-index: 1020;
-        }
-        .sidebar.collapsed { width: 50px; }
-        .sidebar:not(.collapsed) { width: 200px; }
-        .sidebar .nav-link {
-            color: #fff;
-            padding: 10px;
-            display: flex;
-            align-items: center;
-            white-space: nowrap;
-        }
-        .sidebar .nav-link i { min-width: 30px; text-align: center; }
-        .sidebar .nav-link span { display: inline; margin-left: 10px; }
-        .sidebar.collapsed .nav-link span { display: none; }
-        .sidebar .toggle-btn {
-            background: none;
-            border: none;
-            color: #fff;
-            padding: 10px;
-            width: 100%;
-            text-align: left;
-            cursor: pointer;
-        }
-        .main-content {
-            transition: margin-left 0.3s;
-            padding-top: 70px;
-        }
-        .main-content.collapsed { margin-left: 50px; }
-        .main-content:not(.collapsed) { margin-left: 200px; }
-        #tableContainer { overflow-x: auto; }
-        #scheduleTable { width: auto; table-layout: auto; }
-        #scheduleTable th, #scheduleTable td {
-            font-size: 0.85rem;
-            padding: 4px;
-            text-align: center;
-            min-width: 40px;
-        }
-        #scheduleTable th:first-child, #scheduleTable td:first-child {
-            min-width: 160px;
-            text-align: left;
-            position: sticky;
-            left: 0;
-            background-color: #fff;
-            z-index: 1;
-            box-shadow: 2px 0 2px rgba(0, 0, 0, 0.1);
-        }
-        .reserved {
-            background-color: #0d6efd !important;
-            color: #fff;
-            cursor: pointer;
-        }
-        #addReservation { margin-right: 10px; }
-        .tooltip-inner {
-            max-width: 400px;
-            text-align: left;
-            white-space: pre-wrap;
-            font-size: 1rem;
-            padding: 10px;
-        }
-        .select2-container { width: 100% !important; }
-    </style>
+   
 </head>
 <body>
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="owner_page.php">Car Rental</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="owner_page.php">Home</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link active" href="calendar.php">Calendar</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="logout.php">Logout</a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
-
-    <div class="sidebar" id="sidebar">
-        <button class="toggle-btn" id="toggleSidebar">
-            <i class="fas fa-bars"></i>
-        </button>
-        <ul class="nav flex-column">
-            <li class="nav-item">
-                <a class="nav-link" href="owner_page.php">
-                    <i class="fas fa-home"></i>
-                    <span>Dashboard</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link active" href="calendar.php">
-                    <i class="fas fa-calendar"></i>
-                    <span>Calendar</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="#profile">
-                    <i class="fas fa-user"></i>
-                    <span>Profile</span>
-                </a>
-            </li>
-             <li class="nav-item">
-                <a class="nav-link" href="#profile">
-                    <i class="fas fa-user"></i>
-                    <span>Cars</span>
-                </a>
-            </li>
-        </ul>
-    </div>
-
+  
         <!-- Main content -->
     <div class="main-content" id="mainContent">
         <div class="container mt-4">
@@ -316,5 +189,15 @@ $users = $users_stmt->get_result();
 
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+              // Sidebar toggle
+        document.getElementById('toggleSidebar').addEventListener('click', () => {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('mainContent');
+            sidebar.classList.toggle('collapsed');
+            mainContent.classList.toggle('collapsed');
+        });
+
+    </script>
 </body>
 </html>
